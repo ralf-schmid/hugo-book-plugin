@@ -12,7 +12,7 @@ Dieses Plugin erlaubt es dir, deine gelesenen Bücher und Publikationen auf dein
    ```toml
    module:
      imports:
-       - path: github.com/DEIN_USERNAME/hugo-book-plugin
+       - path: github.com/ralf-schmid/hugo-book-plugin
    ```
 2. Parameter in `config.toml` setzen:
    ```toml
