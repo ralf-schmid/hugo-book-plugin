@@ -81,7 +81,7 @@
 
     <p><strong>{{ i18n "buyLabel" }}:</strong>
       {{ range .Site.Params.book.buyLinks }}
-        <a href="{{ replace .url \"{{.ISBN}}\" $isbn }}">{{ .name }}</a>
+        <a href="{{ replace .url "{{.ISBN}}" $isbn }}">{{ .name }}</a>
       {{ end }}
     </p>
 
