@@ -1,15 +1,52 @@
 {{ define "main" }}
-<article class="book-detail max-w-3xl mx-auto p-6">
-  <h1 class="text-2xl font-bold mb-2">{{ .Title }}</h1>
+<article class="book-detail max-w-3xl mx-auto p-6 prose">
+
+  {{/* ======= 1) HEADER: Titel & Untertitel ======= */}}
+  <header class="mb-6">
+    <h1 class="text-3xl font-bold">{{ .Title }}</h1>
+    {{ $gbInfo := .Scratch.Get "gbInfo" }}
+    {{ with index $gbInfo "subtitle" }}
+      <h2 class="text-xl text-gray-600 mt-1">{{ . }}</h2>
+    {{ end }}
+  </header>
+
+  {{/* ======= 2) COVER & METADATEN ======= */}}
   {{ partial "book-meta.html" . }}
 
-  <p class="mt-4"><strong>{{ i18n "ratingLabel" }}:</strong> {{ .Params.rating }} / 5</p>
+  {{/* ======= 3) RATING (Sterne) ======= */}}
+  <div class="mt-6">
+    <p>
+      <strong>{{ i18n "ratingLabel" }}:</strong>
+      {{ $r := .Params.rating }}
+      {{ range $i := seq 5 }}
+        {{ if ge $r $i }}
+          <span class="text-yellow-500 text-lg leading-none">★</span>
+        {{ else }}
+          <span class="text-gray-300 text-lg leading-none">★</span>
+        {{ end }}
+      {{ end }}
+    </p>
+  </div>
 
+  {{/* ======= 4) KOMMENTAR ======= */}}
   {{ if .Params.comment }}
-    <section class="comment prose mt-6">
-      <h2 class="text-xl font-semibold mb-2">{{ i18n "commentTitle" }}</h2>
+    <section class="comment mt-6">
+      <h3 class="text-xl font-semibold mb-2">{{ i18n "commentTitle" }}</h3>
       {{ .Params.comment | markdownify }}
     </section>
   {{ end }}
+
+  {{/* ======= 5) TAGS ======= */}}
+  <footer class="mt-6">
+    <p>
+      <strong>{{ i18n "tagsLabel" }}:</strong>
+      {{ range $i, $tag := .Params.tags }}
+        <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" class="text-blue-600 hover:underline">
+          {{ $tag }}
+        </a>{{ if lt (add $i 1) (len .Params.tags) }}, {{ end }}
+      {{ end }}
+    </p>
+  </footer>
+
 </article>
 {{ end }}
