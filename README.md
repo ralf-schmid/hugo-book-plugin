@@ -14,6 +14,15 @@ Dieses Plugin erlaubt es dir, deine gelesenen Bücher und Publikationen auf dein
      imports:
        - path: github.com/ralf-schmid/hugo-book-plugin
    ```
+
+  ````toml
+   [[imports]]
+path = "github.com/ralf-schmid/hugo-book-plugin"
+
+[[mounts]]
+source = "github.com/ralf-schmid/hugo-book-plugin/scripts"
+target = "scripts"````
+   
 2. Parameter in `config.toml` setzen:
    ```toml
    [params.book]
