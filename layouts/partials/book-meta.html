@@ -1,95 +1,90 @@
-{{/* layouts/partials/book-meta.html */}}
+{{/* cover + metadata */}}
 {{ $isbn   := .Params.isbn }}
-{{ $author := .Params.override_author }}
-{{ $pages  := .Params.override_pages }}
-{{ $desc   := .Params.override_description }}
-{{ $price  := .Params.override_price }}
+{{ $coverO := .Params.override_cover }}
 
 {{ if $isbn }}
 
-  {{/* ==== GOOGLE BOOKS DATEN (SCRATCH) ==== */}}
-  {{ $gbURL := printf "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" $isbn }}
-  {{ $gb := resources.GetRemote $gbURL | transform.Unmarshal }}
-  {{ $items := index $gb "items" }}
-  {{ $.Scratch.Set "gbInfo" (dict) }}
-  {{ if and $items (gt (len $items) 0) }}
-    {{ $info := index (index $items 0) "volumeInfo" }}
-    {{ $.Scratch.Set "gbInfo" $info }}
-  {{ end }}
-
-  {{/* ==== OPENLIBRARY DATEN (SCRATCH) ==== */}}
-  {{ $olURL := printf "https://openlibrary.org/api/books?bibkeys=ISBN:%s&format=json&jscmd=data" $isbn }}
-  {{ $ol := resources.GetRemote $olURL | transform.Unmarshal }}
-  {{ $.Scratch.Set "olData" (dict) }}
-  {{ $key := printf "ISBN:%s" $isbn }}
-  {{ with index $ol $key }}
-    {{ $.Scratch.Set "olData" . }}
-  {{ end }}
-
-  {{/* ==== COVER: Google zuerst, dann OpenLibrary ==== */}}
-  {{ $gbInfo := $.Scratch.Get "gbInfo" }}
-  {{ $links := index $gbInfo "imageLinks" }}
-  {{ $coverURL := cond (and $links (isset $links "thumbnail")) (index $links "thumbnail") nil }}
-  {{ if not $coverURL }}
-    {{ $coverURL = cond (and $links (isset $links "smallThumbnail")) (index $links "smallThumbnail") nil }}
-  {{ end }}
-  {{ if $coverURL }}
-    <img src="{{ $coverURL }}" alt="{{ .Title }} Cover" class="w-full mb-4 border rounded">
+  {{/* === COVER: override_cover first === */}}
+  {{ if $coverO }}
+    <img src="{{ $coverO }}" alt="{{ .Title }} Cover" class="w-full mb-4 border rounded">
   {{ else }}
-    {{ $size := .Site.Params.book.imageSizeSingle }}
-    {{ $dash := cond (gt (len $size) 0) (printf "-%s" $size) "" }}
-    <img 
-      src="https://covers.openlibrary.org/b/isbn/{{ $isbn }}{{ $dash }}.jpg?default=false" 
-      alt="{{ .Title }} Cover" 
-      class="w-full mb-4 border rounded" 
-      onerror="this.style.display='none'">
+    {{/* ==== GOOGLE BOOKS ==== */}}
+    {{ $gbURL := printf "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" $isbn }}
+    {{ $gb    := resources.GetRemote $gbURL | transform.Unmarshal }}
+    {{ $items := index $gb "items" }}
+    {{ $info  := dict }}
+    {{ if and $items (gt (len $items) 0) }}
+      {{ $info = index (index $items 0) "volumeInfo" }}
+    {{ end }}
+
+    {{/* Try thumbnail, then smallThumbnail */}}
+    {{ $coverURL := index $info "imageLinks" "thumbnail" }}
+    {{ if not $coverURL }}
+      {{ $coverURL = index $info "imageLinks" "smallThumbnail" }}
+    {{ end }}
+
+    {{ if $coverURL }}
+      <img src="{{ $coverURL }}" alt="{{ .Title }} Cover" class="w-full mb-4 border rounded">
+    {{ else }}
+      {{/* ==== FALLBACK OpenLibrary ==== */}}
+      {{ $size := .Site.Params.book.imageSizeSingle }}
+      {{ $dash := cond (gt (len $size) 0) (printf "-%s" $size) "" }}
+      <img 
+        src="https://covers.openlibrary.org/b/isbn/{{ $isbn }}{{ $dash }}.jpg?default=false" 
+        alt="{{ .Title }} Cover" 
+        class="w-full mb-4 border rounded" 
+        onerror="this.style.display='none'">
+    {{ end }}
+
+    {{/* === METADATEN aus $info oder Overrides === */}}
+    <p><strong>{{ i18n "authorLabel" }}:</strong>
+      {{ if .Params.override_author }}
+        {{ .Params.override_author }}
+      {{ else if index $info "authors" }}
+        {{ index (index $info "authors") 0 }}
+      {{ else }}
+        –
+      {{ end }}
+    </p>
+
+    <p><strong>{{ i18n "pagesLabel" }}:</strong>
+      {{ if gt .Params.override_pages 0 }}
+        {{ .Params.override_pages }}
+      {{ else if index $info "pageCount" }}
+        {{ index $info "pageCount" }}
+      {{ else }}
+        –
+      {{ end }}
+    </p>
+
+    <p><strong>{{ i18n "publisherLabel" }}:</strong>
+      {{ with index $info "publisher" }}{{ . }}{{ else }}–{{ end }}
+    </p>
+
+    <p><strong>{{ i18n "publishedDateLabel" }}:</strong>
+      {{ with index $info "publishedDate" }}{{ . }}{{ else }}–{{ end }}
+    </p>
+
+    <p><strong>{{ i18n "descriptionLabel" }}:</strong>
+      {{ if .Params.override_description }}
+        {{ .Params.override_description }}
+      {{ else if index $info "description" }}
+        {{ index $info "description" }}
+      {{ else }}
+        –
+      {{ end }}
+    </p>
+
+    <p><strong>{{ i18n "priceLabel" }}:</strong> 
+      {{ if .Params.override_price }}{{ .Params.override_price }}{{ else }}k.A.{{ end }}
+    </p>
+
+    <p><strong>{{ i18n "buyLabel" }}:</strong>
+      {{ range .Site.Params.book.buyLinks }}
+        <a href="{{ replace .url \"{{.ISBN}}\" $isbn }}">{{ .name }}</a>
+      {{ end }}
+    </p>
+
   {{ end }}
-
-  {{/* ==== METADATEN ==== */}}
-  {{ $gbAuthors := index $gbInfo "authors" }}
-  {{ $olData := $.Scratch.Get "olData" }}
-  <p><strong>{{ i18n "authorLabel" }}:</strong>
-    {{ if $author }}
-      {{ $author }}
-    {{ else if and $gbAuthors (gt (len $gbAuthors) 0) }}
-      {{ index $gbAuthors 0 }}
-    {{ else if $olData.authors }}
-      {{ index $olData.authors 0 "name" }}
-    {{ else }}
-      –
-    {{ end }}
-  </p>
-
-  <p><strong>{{ i18n "pagesLabel" }}:</strong>
-    {{ if gt $pages 0 }}
-      {{ $pages }}
-    {{ else if $gbInfo.pageCount }}
-      {{ index $gbInfo "pageCount" }}
-    {{ else if $olData.number_of_pages }}
-      {{ index $olData "number_of_pages" }}
-    {{ else }}
-      –
-    {{ end }}
-  </p>
-
-  <p><strong>{{ i18n "descriptionLabel" }}:</strong>
-    {{ if $desc }}
-      {{ $desc }}
-    {{ else if $gbInfo.description }}
-      {{ index $gbInfo "description" }}
-    {{ else if $olData.description }}
-      {{ index $olData "description" }}
-    {{ else }}
-      –
-    {{ end }}
-  </p>
-
-  <p><strong>{{ i18n "priceLabel" }}:</strong> {{ if $price }}{{ $price }}{{ else }}k.A.{{ end }}</p>
-
-  <p><strong>{{ i18n "buyLabel" }}:</strong>
-    {{ range .Site.Params.book.buyLinks }}
-      <a href="{{ replace .url "{{.ISBN}}" $isbn }}">{{ .name }}</a>
-    {{ end }}
-  </p>
 
 {{ end }}
