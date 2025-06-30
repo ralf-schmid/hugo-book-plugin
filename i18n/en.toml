@@ -1,0 +1,23 @@
+[bookListTitle]
+other = "Book Overview"
+
+[commentTitle]
+other = "Comment"
+
+[authorLabel]
+other = "Author"
+
+[pagesLabel]
+other = "Pages"
+
+[descriptionLabel]
+other = "Description"
+
+[priceLabel]
+other = "Price"
+
+[buyLabel]
+other = "Buy"
+
+[ratingLabel]
+other = "Rating"

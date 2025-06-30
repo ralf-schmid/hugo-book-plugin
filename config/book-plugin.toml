@@ -1,0 +1,11 @@
+[params.book]
+imageSizeList = "M"
+imageSizeSingle = "L"
+
+[[params.book.buyLinks]]
+name = "Amazon"
+url = "https://www.amazon.de/s?k={{.ISBN}}"
+
+[[params.book.buyLinks]]
+name = "Thalia"
+url = "https://www.thalia.de/search.html?filter.searchWord={{.ISBN}}"

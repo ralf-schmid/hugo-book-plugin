@@ -1,0 +1,20 @@
+{{ define "main" }}
+  <article class="book-detail">
+    {{ $size := .Site.Params.book.imageSizeSingle }}
+    <img class="cover" src="{{ printf "https://covers.openlibrary.org/b/isbn/%s-%s.jpg" .Params.isbn $size }}" alt="{{ .Title }} Cover">
+    <h1>{{ .Title }}</h1>
+    {{ partial "book-meta.html" . }}
+    <p><strong>Tags:</strong>
+      {{ range .Params.tags }}
+        <a href="{{ "/tags/" | relLangURL }}{{ . | urlize }}">{{ . }}</a>
+      {{ end }}
+    </p>
+    <p><strong>{{ i18n "ratingLabel" }}:</strong> {{ .Params.rating }} / 5</p>
+    {{ if .Params.comment }}
+      <section class="comment">
+        <h2>{{ i18n "commentTitle" }}</h2>
+        <p>{{ .Params.comment }}</p>
+      </section>
+    {{ end }}
+  </article>
+{{ end }}
