@@ -1,19 +1,30 @@
 {{ define "main" }}
-  <article class="book-detail">
+  <article class="book-detail max-w-3xl mx-auto p-6">
     {{ $size := .Site.Params.book.imageSizeSingle }}
-    <img class="cover" src="{{ printf "https://covers.openlibrary.org/b/isbn/%s-%s.jpg" .Params.isbn $size }}" alt="{{ .Title }} Cover">
-    <h1>{{ .Title }}</h1>
+    <img 
+      class="w-full mb-6 object-contain border rounded" 
+      src="https://covers.openlibrary.org/b/isbn/{{ .Params.isbn }}-{{ $size }}.jpg?default=false" 
+      alt="{{ .Title }} Cover">
+
+    <h1 class="text-2xl font-bold mb-4">{{ .Title }}</h1>
+
     {{ partial "book-meta.html" . }}
-    <p><strong>Tags:</strong>
-      {{ range .Params.tags }}
-        <a href="{{ "/tags/" | relLangURL }}{{ . | urlize }}">{{ . }}</a>
+
+    <p class="mt-4"><strong>Tags:</strong>
+      {{ range $i, $tag := .Params.tags }}
+        <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" 
+           class="text-blue-600 hover:underline">
+          {{ $tag }}
+        </a>{{ if lt (add $i 1) (len .Params.tags) }}, {{ end }}
       {{ end }}
     </p>
-    <p><strong>{{ i18n "ratingLabel" }}:</strong> {{ .Params.rating }} / 5</p>
+
+    <p class="mt-2"><strong>{{ i18n "ratingLabel" }}:</strong> {{ .Params.rating }} / 5</p>
+
     {{ if .Params.comment }}
-      <section class="comment">
-        <h2>{{ i18n "commentTitle" }}</h2>
-        <p>{{ .Params.comment }}</p>
+      <section class="comment prose mt-6">
+        <h2 class="text-xl font-semibold mb-2">{{ i18n "commentTitle" }}</h2>
+        {{ .Params.comment | markdownify }}
       </section>
     {{ end }}
   </article>
