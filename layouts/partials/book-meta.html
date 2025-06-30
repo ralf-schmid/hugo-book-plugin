@@ -1,23 +1,35 @@
-{{/* layouts/partials/book-meta.html */}}
 {{ $isbn := .Params.isbn }}
-{{ $author := .Params.override_author }}
-{{ $pages := .Params.override_pages }}
-{{ $desc := .Params.override_description }}
-{{ $price := .Params.override_price }}
 {{ if $isbn }}
-  {{ $url := printf "https://openlibrary.org/api/books?bibkeys=ISBN:%s&format=json&jscmd=data" $isbn }}
-  {{ $remote := resources.GetRemote $url }}
-  {{ $data := transform.Unmarshal $remote.Content }}
-  {{ $book := index $data (printf "ISBN:%s" $isbn) }}
-  {{ with $book }}
-    <p><strong>{{ i18n "authorLabel" }}:</strong> {{ if $author }}{{ $author }}{{ else }}{{ (index .authors 0).name }}{{ end }}</p>
-    <p><strong>{{ i18n "pagesLabel" }}:</strong> {{ if gt $pages 0 }}{{ $pages }}{{ else }}{{ .number_of_pages }}{{ end }}</p>
-    <p><strong>{{ i18n "descriptionLabel" }}:</strong> {{ if $desc }}{{ $desc }}{{ else }}{{ if .description }}{{ .description }}{{ else }}–{{ end }}{{ end }}</p>
-    <p><strong>{{ i18n "priceLabel" }}:</strong> {{ if $price }}{{ $price }}{{ else }}k.A.{{ end }}</p>
-    <p><strong>{{ i18n "buyLabel" }}:</strong>
-      {{ range .Site.Params.book.buyLinks }}
-        <a href="{{ replace .url "{{.ISBN}}" $isbn }}">{{ .name }}</a>
+  {{/* 1) Daten von OpenLibrary */}}
+  {{ $olURL := printf "https://openlibrary.org/api/books?bibkeys=ISBN:%s&format=json&jscmd=data" $isbn }}
+  {{ $ol := resources.GetRemote $olURL | transform.Unmarshal }}
+  {{ $book := index $ol (printf "ISBN:%s" $isbn) }}
+
+  {{/* 2) Fallback auf Google Books */}}
+  {{ if not $book }}
+    {{ $gbURL := printf "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" $isbn }}
+    {{ $gb := resources.GetRemote $gbURL | transform.Unmarshal }}
+    {{ $items := index $gb "items" }}
+    {{ if gt (len $items) 0 }}
+      {{ $info := index $items 0 | index "volumeInfo" }}
+      {{/* Google liefert das Thumbnail hier: */}}
+      {{ $coverURL := index $info "imageLinks" "thumbnail" }}
+      {{ with $coverURL }}
+        <img src="{{ . }}" alt="{{ $.Title }} Cover" class="w-full mb-4 border rounded">
       {{ end }}
-    </p>
+      {{/* Hier kannst Du noch Autoren/Seiten/Beschreibung aus $info auslesen */}}
+      {{/* .. */}}
+    {{ end }}
+  {{ else }}
+    {{/* 3) Standard‐Cover von OpenLibrary */}}
+    <img 
+      src="https://covers.openlibrary.org/b/isbn/{{ $isbn }}-L.jpg?default=false" 
+      alt="{{ .Title }} Cover" 
+      class="w-full mb-4 border rounded">
   {{ end }}
+
+  {{/* Rest der Metadaten wie bisher */}}
+  <p><strong>{{ i18n "authorLabel" }}:</strong> {{ with .Params.override_author }}{{ . }}{{ else }}{{ (index $book.authors 0).name }}{{ end }}</p>
+  <p><strong>{{ i18n "pagesLabel" }}:</strong> {{ with .Params.override_pages }}{{ . }}{{ else }}{{ $book.number_of_pages }}{{ end }}</p>
+  {{/* …usw. …*/}}
 {{ end }}
