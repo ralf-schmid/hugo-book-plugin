@@ -10,14 +10,9 @@
 
     {{ partial "book-meta.html" . }}
 
-    {{/* Tags: handle string vs slice */}}
-    {{ $rawTags := .Params.tags }}
-    {{ if eq (kindOf $rawTags) "string" }}
-      {{ $tags := slice $rawTags }}
-    {{ else }}
-      {{ $tags := $rawTags }}
-    {{ end }}
-    <p class="mt-4"><strong>{{ i18n "tagsLabel" }}</strong>:
+    {{/* Tags: sicher als Slice casten */}}
+    {{ $tags := cond (eq (printf "%T" .Params.tags) "string") (slice .Params.tags) .Params.tags }}
+    <p class="mt-4"><strong>{{ i18n "tagsLabel" }}:</strong>
       {{ range $i, $tag := $tags }}
         <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" 
            class="text-blue-600 hover:underline">
