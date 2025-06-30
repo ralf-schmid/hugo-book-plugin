@@ -15,13 +15,14 @@ Dieses Plugin erlaubt es dir, deine gelesenen Bücher und Publikationen auf dein
        - path: github.com/ralf-schmid/hugo-book-plugin
    ```
 
-  ````toml
+  ```toml
    [[imports]]
 path = "github.com/ralf-schmid/hugo-book-plugin"
 
 [[mounts]]
 source = "github.com/ralf-schmid/hugo-book-plugin/scripts"
-target = "scripts"````
+target = "scripts"
+```
    
 2. Parameter in `config.toml` setzen:
    ```toml
@@ -38,6 +39,25 @@ target = "scripts"````
    hugo mod get
    hugo server
    ```
+
+4. Python-Abhängigkeiten installieren
+```bash
+pip install \
+  python-frontmatter \
+  requests \
+  pillow \
+  pyzbar
+```
+
+6. Erstes Buch anlegen
+```bash
+hugo new --kind book books/mein-buch.md
+```
+
+6. Daten befüllen
+```bash
+python scripts/prefill_books.py
+```
 
 ## Vorschau
 
