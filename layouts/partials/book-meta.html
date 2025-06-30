@@ -1,12 +1,15 @@
+{{/* layouts/partials/book-meta.html */}}
 {{ $isbn := .Params.isbn }}
 {{ $author := .Params.override_author }}
 {{ $pages := .Params.override_pages }}
 {{ $desc := .Params.override_description }}
 {{ $price := .Params.override_price }}
 {{ if $isbn }}
-  {{ $ol := getJSON (printf "https://openlibrary.org/api/books?bibkeys=ISBN:%s&format=json&jscmd=data" $isbn) }}
-  {{ $data := index $ol (printf "ISBN:%s" $isbn) }}
-  {{ with $data }}
+  {{ $url := printf "https://openlibrary.org/api/books?bibkeys=ISBN:%s&format=json&jscmd=data" $isbn }}
+  {{ $remote := resources.GetRemote $url }}
+  {{ $data := transform.Unmarshal $remote.Content }}
+  {{ $book := index $data (printf "ISBN:%s" $isbn) }}
+  {{ with $book }}
     <p><strong>{{ i18n "authorLabel" }}:</strong> {{ if $author }}{{ $author }}{{ else }}{{ (index .authors 0).name }}{{ end }}</p>
     <p><strong>{{ i18n "pagesLabel" }}:</strong> {{ if gt $pages 0 }}{{ $pages }}{{ else }}{{ .number_of_pages }}{{ end }}</p>
     <p><strong>{{ i18n "descriptionLabel" }}:</strong> {{ if $desc }}{{ $desc }}{{ else }}{{ if .description }}{{ .description }}{{ else }}–{{ end }}{{ end }}</p>
