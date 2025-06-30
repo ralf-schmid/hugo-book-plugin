@@ -53,29 +53,52 @@
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
       <p><strong>{{ i18n "authorLabel" }}:</strong>
-        {{ if .Params.override_author }}{{ .Params.override_author }}
-        {{ else if index $info "authors" }}{{ index (index $info "authors") 0 }}
-        {{ else if index $olData "authors" }}{{ index (index $olData "authors") 0 "name" }}
-        {{ else }}–{{ end }}
+        {{ if .Params.override_author }}
+          {{ .Params.override_author }}
+        {{ else if index $info "authors" }}
+          {{ index (index $info "authors") 0 }}
+        {{ else if index $olData "authors" }}
+          {{ index (index $olData "authors") 0 "name" }}
+        {{ else }}
+          –
+        {{ end }}
       </p>
-      <p><strong>{{ i18n "publisherLabel" }}:</strong> {{ with index $info "publisher" }}{{ . }}{{ else if index $olData "publishers" }}{{ index (index $olData "publishers") 0 }}{{ else }}–{{ end }}</p>
-      <p><strong>{{ i18n "publishedDateLabel" }}:</strong> {{ with index $info "publishedDate" }}{{ . }}{{ else }}–{{ end }}</p>
+      <p><strong>{{ i18n "publisherLabel" }}:</strong>
+        {{ with index $info "publisher" }}{{ . }}{{ else if index $olData "publishers" }}{{ index (index $olData "publishers") 0 }}{{ else }}–{{ end }}
+      </p>
+      <p><strong>{{ i18n "publishedDateLabel" }}:</strong>
+        {{ with index $info "publishedDate" }}{{ . }}{{ else }}–{{ end }}
+      </p>
     </div>
     <div>
       <p><strong>{{ i18n "pagesLabel" }}:</strong>
-        {{ if gt .Params.override_pages 0 }}{{ .Params.override_pages }}
-        {{ else if index $info "pageCount" }}{{ index $info "pageCount" }}
-        {{ else if index $olData "number_of_pages" }}{{ index $olData "number_of_pages" }}
-        {{ else }}–{{ end }}
+        {{ if gt .Params.override_pages 0 }}
+          {{ .Params.override_pages }}
+        {{ else if index $info "pageCount" }}
+          {{ index $info "pageCount" }}
+        {{ else if index $olData "number_of_pages" }}
+          {{ index $olData "number_of_pages" }}
+        {{ else }}
+          –
+        {{ end }}
       </p>
       <p><strong>{{ i18n "descriptionLabel" }}:</strong>
-        {{ if .Params.override_description }}{{ .Params.override_description }}
-        {{ else if index $info "description" }}{{ index $info "description" }}
-        {{ else if index $olData "description" }}{{ index $olData "description" }}
-        {{ else }}–{{ end }}
+        {{ if .Params.override_description }}
+          {{ .Params.override_description }}
+        {{ else if index $info "description" }}
+          {{ index $info "description" }}
+        {{ else if index $olData "description" }}
+          {{ index $olData "description" }}
+        {{ else }}
+          –
+        {{ end }}
       </p>
       <p><strong>{{ i18n "priceLabel" }}:</strong>
-        {{ if .Params.override_price }}{{ printf "%s Euro" .Params.override_price }}{{ else }}–{{ end }}
+        {{ if .Params.override_price }}
+          {{ printf "%0.2f Euro" .Params.override_price }}
+        {{ else }}
+          –
+        {{ end }}
       </p>
     </div>
   </div>
@@ -102,7 +125,7 @@
   {{ $tags := cond (eq (printf "%T" .Params.tags) "string") (slice .Params.tags) .Params.tags }}
   <p class="mt-6"><strong>{{ i18n "tagsLabel" }}:</strong>
     {{ range $i, $tag := $tags }}
-      <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" class="text-blue-600 hover:underline">{{ $tag }}</a>{{ if lt (add $i 1 (len $tags)) }} , {{ end }}
+      <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" class="text-blue-600 hover:underline">{{ $tag }}</a>{{ if lt (add $i 1) (len $tags) }}, {{ end }}
     {{ end }}
   </p>
 
