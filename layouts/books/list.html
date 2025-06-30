@@ -1,20 +1,25 @@
 {{ define "main" }}
   <h1>{{ i18n "bookListTitle" }}</h1>
+
+  {{/* 1. Alle Seiten in „books“ holen */}}
+  {{ $bookPages := where .Site.Pages "Section" "books" }}
+
+  {{/* 2. Alle Tags sammeln */}}
+  {{ $allTags := slice }}
+  {{ range $bookPages }}
+    {{ range .Params.tags }}
+      {{ $allTags = $allTags | append . }}
+    {{ end }}
+  {{ end }}
+
+  {{/* 3. Einzigartige Tags sortieren */}}
+  {{ $unique := uniq $allTags }}
+
   <nav class="filters">
-    {{ range sort .Site.Taxonomies.tags.Alphabetical }}
-      <a href="{{ .Page.Permalink }}" class="tag">{{ .Term }}</a>
+    {{ range sort $unique }}
+      <a href="{{ "/tags/" | relLangURL }}{{ . | urlize }}" class="tag">{{ . }}</a>
     {{ end }}
   </nav>
-  <div class="gallery">
-    {{ $size := .Site.Params.book.imageSizeList }}
-    {{ range .Pages.ByDate.Reverse }}
-      <article class="book-card">
-        <a href="{{ .Permalink }}">
-          <img src="{{ printf "https://covers.openlibrary.org/b/isbn/%s-%s.jpg" .Params.isbn $size }}" alt="{{ .Title }} Cover">
-          <h2>{{ .Title }}</h2>
-          <p>{{ with .Params.override_author }}{{ . }}{{ else }}{{ index .Params.authors 0 }}{{ end }}</p>
-        </a>
-      </article>
-    {{ end }}
-  </div>
+
+  …
 {{ end }}
