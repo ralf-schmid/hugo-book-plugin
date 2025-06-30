@@ -21,3 +21,15 @@ other = "Buy"
 
 [ratingLabel]
 other = "Rating"
+
+[publisherLabel]
+other = "Publisher"
+
+[publishedDateLabel]
+other = "Published"
+
+[tagTermTitle]
+other = "Books tagged"
+
+[authorTermTitle]
+other = "Books by author"
