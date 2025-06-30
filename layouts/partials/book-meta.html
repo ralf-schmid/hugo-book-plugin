@@ -1,57 +1,65 @@
 {{/* layouts/partials/book-meta.html */}}
-{{ $isbn := .Params.isbn }}
+{{ $isbn   := .Params.isbn }}
 {{ $author := .Params.override_author }}
-{{ $pages := .Params.override_pages }}
-{{ $desc := .Params.override_description }}
-{{ $price := .Params.override_price }}
+{{ $pages  := .Params.override_pages }}
+{{ $desc   := .Params.override_description }}
+{{ $price  := .Params.override_price }}
+
 {{ if $isbn }}
 
-  {{/* 1) Versuch: OpenLibrary Cover */}}
-  {{ $olCoverURL := printf "https://covers.openlibrary.org/b/isbn/%s-L.jpg?default=false" $isbn }}
-  <img 
-    src="{{ $olCoverURL }}" 
-    alt="{{ .Title }} Cover" 
-    class="w-full mb-4 border rounded" 
-    onerror="this.style.display='none'">
+  {{/* ==== 1) COVER: Google Books zuerst ==== */}}
+  {{ $gbURL   := printf "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" $isbn }}
+  {{ $gb      := resources.GetRemote $gbURL | transform.Unmarshal }}
+  {{ $items   := index $gb "items" }}
+  {{ if and $items (gt (len $items) 0) }}
+    {{ $info     := index (index $items 0) "volumeInfo" }}
+    {{ with index $info "imageLinks" }}
+      {{ $links    := . }}
+      {{ $coverURL := or (index $links "thumbnail") (index $links "smallThumbnail") }}
+      {{ if $coverURL }}
+        <img 
+          src="{{ $coverURL }}" 
+          alt="{{ $.Title }} Cover" 
+          class="w-full mb-4 border rounded">
+      {{ end }}
+    {{ end }}
+  {{ else }}
+    {{/* ==== 2) FALLBACK: OpenLibrary ==== */}}
+    {{ $size := .Site.Params.book.imageSizeSingle }}
+    {{ $dash := cond (gt (len $size) 0) (printf "-%s" $size) "" }}
+    <img 
+      src="https://covers.openlibrary.org/b/isbn/{{ $isbn }}{{ $dash }}.jpg?default=false" 
+      alt="{{ .Title }} Cover" 
+      class="w-full mb-4 border rounded" 
+      onerror="this.style.display='none'">
+  {{ end }}
 
-  {{/* 2) Fallback: Google Books Cover, wenn OpenLibrary-URL 404 liefert */}}
-  <script>
-    // Falls kein Bild von OpenLibrary, ersetzen wir im Nachgang
-    window.addEventListener('load', function() {
-      var img = document.querySelector('img[alt="{{ .Title }} Cover"]');
-      if (img && img.naturalHeight === 0) {
-        img.src = ''; // verstecken
-        // jetzt Google abrufen
-        fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:{{ $isbn }}')
-          .then(res => res.json())
-          .then(js => {
-            if (js.items && js.items.length > 0) {
-              var info = js.items[0].volumeInfo || {};
-              var thumb = info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail);
-              if (thumb) {
-                img.src = thumb;
-                img.style.display = 'block';
-              }
-            }
-          });
-      }
-    });
-  </script>
-
-  {{/* 3) Rest der Metadaten */}}
-  <p><strong>{{ i18n "authorLabel" }}:</strong> 
-    {{ if $author }}{{ $author }}{{ else }}{{ index (index ($.Scratch.Get "olData") "authors") 0 }}{{ end }}
-  </p>
-  <p><strong>{{ i18n "pagesLabel" }}:</strong> 
-    {{ if gt $pages 0 }}{{ $pages }}{{ else }}{{ index ($.Scratch.Get "olData") "number_of_pages" }}{{ end }}
-  </p>
-  <p><strong>{{ i18n "descriptionLabel" }}:</strong>
-    {{ if $desc }}{{ $desc }}{{ else }}{{ with index ($.Scratch.Get "olData") "description" }}{{ . }}{{ else }}–{{ end }}{{ end }}
-  </p>
-  <p><strong>{{ i18n "priceLabel" }}:</strong> {{ if $price }}{{ $price }}{{ else }}k.A.{{ end }}</p>
-  <p><strong>{{ i18n "buyLabel" }}:</strong>
-    {{ range .Site.Params.book.buyLinks }}
-      <a href="{{ replace .url "{{.ISBN}}" $isbn }}">{{ .name }}</a>
+  {{/* ==== 3) METADATEN ==== */}}
+  <p><strong>{{ i18n "authorLabel" }}:</strong>
+    {{ if $author }}{{ $author }}{{ else }}
+      {{/* aus Google oder OpenLibrary (falls im $info) */}}
+      {{ with index $info "authors" }}{{ index . 0 }}{{ else }}–{{ end }}
     {{ end }}
   </p>
+
+  <p><strong>{{ i18n "pagesLabel" }}:</strong>
+    {{ if gt $pages 0 }}{{ $pages }}{{ else }}
+      {{ with index $info "pageCount" }}{{ . }}{{ else }}–{{ end }}
+    {{ end }}
+  </p>
+
+  <p><strong>{{ i18n "descriptionLabel" }}:</strong>
+    {{ if $desc }}{{ $desc }}{{ else }}
+      {{ with index $info "description" }}{{ . }}{{ else }}–{{ end }}
+    {{ end }}
+  </p>
+
+  <p><strong>{{ i18n "priceLabel" }}:</strong> {{ if $price }}{{ $price }}{{ else }}k.A.{{ end }}</p>
+
+  <p><strong>{{ i18n "buyLabel" }}:</strong>
+    {{ range .Site.Params.book.buyLinks }}
+      <a href="{{ replace .url \"{{.ISBN}}\" $isbn }}">{{ .name }}</a>
+    {{ end }}
+  </p>
+
 {{ end }}
