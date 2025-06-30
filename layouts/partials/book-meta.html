@@ -7,24 +7,35 @@
 
 {{ if $isbn }}
 
-  {{/* ==== 1) COVER: Google Books zuerst ==== */}}
-  {{ $gbURL   := printf "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" $isbn }}
-  {{ $gb      := resources.GetRemote $gbURL | transform.Unmarshal }}
-  {{ $items   := index $gb "items" }}
+  {{/* ==== GOOGLE BOOKS DATEN (SCRATCH) ==== */}}
+  {{ $gbURL := printf "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" $isbn }}
+  {{ $gb := resources.GetRemote $gbURL | transform.Unmarshal }}
+  {{ $items := index $gb "items" }}
+  {{ $.Scratch.Set "gbInfo" (dict) }}
   {{ if and $items (gt (len $items) 0) }}
-    {{ $info     := index (index $items 0) "volumeInfo" }}
-    {{ with index $info "imageLinks" }}
-      {{ $links    := . }}
-      {{ $coverURL := or (index $links "thumbnail") (index $links "smallThumbnail") }}
-      {{ if $coverURL }}
-        <img 
-          src="{{ $coverURL }}" 
-          alt="{{ $.Title }} Cover" 
-          class="w-full mb-4 border rounded">
-      {{ end }}
-    {{ end }}
+    {{ $info := index (index $items 0) "volumeInfo" }}
+    {{ $.Scratch.Set "gbInfo" $info }}
+  {{ end }}
+
+  {{/* ==== OPENLIBRARY DATEN (SCRATCH) ==== */}}
+  {{ $olURL := printf "https://openlibrary.org/api/books?bibkeys=ISBN:%s&format=json&jscmd=data" $isbn }}
+  {{ $ol := resources.GetRemote $olURL | transform.Unmarshal }}
+  {{ $.Scratch.Set "olData" (dict) }}
+  {{ $key := printf "ISBN:%s" $isbn }}
+  {{ with index $ol $key }}
+    {{ $.Scratch.Set "olData" . }}
+  {{ end }}
+
+  {{/* ==== COVER: Google zuerst, dann OpenLibrary ==== */}}
+  {{ $gbInfo := $.Scratch.Get "gbInfo" }}
+  {{ $links := index $gbInfo "imageLinks" }}
+  {{ $coverURL := cond (and $links (isset $links "thumbnail")) (index $links "thumbnail") nil }}
+  {{ if not $coverURL }}
+    {{ $coverURL = cond (and $links (isset $links "smallThumbnail")) (index $links "smallThumbnail") nil }}
+  {{ end }}
+  {{ if $coverURL }}
+    <img src="{{ $coverURL }}" alt="{{ .Title }} Cover" class="w-full mb-4 border rounded">
   {{ else }}
-    {{/* ==== 2) FALLBACK: OpenLibrary ==== */}}
     {{ $size := .Site.Params.book.imageSizeSingle }}
     {{ $dash := cond (gt (len $size) 0) (printf "-%s" $size) "" }}
     <img 
@@ -34,23 +45,42 @@
       onerror="this.style.display='none'">
   {{ end }}
 
-  {{/* ==== 3) METADATEN ==== */}}
+  {{/* ==== METADATEN ==== */}}
+  {{ $gbAuthors := index $gbInfo "authors" }}
+  {{ $olData := $.Scratch.Get "olData" }}
   <p><strong>{{ i18n "authorLabel" }}:</strong>
-    {{ if $author }}{{ $author }}{{ else }}
-      {{/* aus Google oder OpenLibrary (falls im $info) */}}
-      {{ with index $info "authors" }}{{ index . 0 }}{{ else }}–{{ end }}
+    {{ if $author }}
+      {{ $author }}
+    {{ else if and $gbAuthors (gt (len $gbAuthors) 0) }}
+      {{ index $gbAuthors 0 }}
+    {{ else if $olData.authors }}
+      {{ index $olData.authors 0 "name" }}
+    {{ else }}
+      –
     {{ end }}
   </p>
 
   <p><strong>{{ i18n "pagesLabel" }}:</strong>
-    {{ if gt $pages 0 }}{{ $pages }}{{ else }}
-      {{ with index $info "pageCount" }}{{ . }}{{ else }}–{{ end }}
+    {{ if gt $pages 0 }}
+      {{ $pages }}
+    {{ else if $gbInfo.pageCount }}
+      {{ index $gbInfo "pageCount" }}
+    {{ else if $olData.number_of_pages }}
+      {{ index $olData "number_of_pages" }}
+    {{ else }}
+      –
     {{ end }}
   </p>
 
   <p><strong>{{ i18n "descriptionLabel" }}:</strong>
-    {{ if $desc }}{{ $desc }}{{ else }}
-      {{ with index $info "description" }}{{ . }}{{ else }}–{{ end }}
+    {{ if $desc }}
+      {{ $desc }}
+    {{ else if $gbInfo.description }}
+      {{ index $gbInfo "description" }}
+    {{ else if $olData.description }}
+      {{ index $olData "description" }}
+    {{ else }}
+      –
     {{ end }}
   </p>
 
@@ -58,7 +88,7 @@
 
   <p><strong>{{ i18n "buyLabel" }}:</strong>
     {{ range .Site.Params.book.buyLinks }}
-      <a href="{{ replace .url \"{{.ISBN}}\" $isbn }}">{{ .name }}</a>
+      <a href="{{ replace .url "{{.ISBN}}" $isbn }}">{{ .name }}</a>
     {{ end }}
   </p>
 
