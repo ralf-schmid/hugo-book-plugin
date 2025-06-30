@@ -10,12 +10,19 @@
 
     {{ partial "book-meta.html" . }}
 
-    <p class="mt-4"><strong>Tags:</strong>
-      {{ range $i, $tag := .Params.tags }}
+    {{/* Tags: handle string vs slice */}}
+    {{ $rawTags := .Params.tags }}
+    {{ if eq (kindOf $rawTags) "string" }}
+      {{ $tags := slice $rawTags }}
+    {{ else }}
+      {{ $tags := $rawTags }}
+    {{ end }}
+    <p class="mt-4"><strong>{{ i18n "tagsLabel" }}</strong>:
+      {{ range $i, $tag := $tags }}
         <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" 
            class="text-blue-600 hover:underline">
           {{ $tag }}
-        </a>{{ if lt (add $i 1) (len .Params.tags) }}, {{ end }}
+        </a>{{ if lt (add $i 1) (len $tags) }}, {{ end }}
       {{ end }}
     </p>
 
