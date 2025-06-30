@@ -1,28 +1,27 @@
 {{ define "main" }}
 <article class="book-detail max-w-3xl mx-auto p-6 prose">
 
-  {{/* ======= 1) HEADER: Titel & Untertitel ======= */}}
+  {{/* ======= 1) TITEL & UNTERTITEL ======= */}}
   <header class="mb-6">
-    <h1 class="text-3xl font-bold">{{ .Title }}</h1>
-    {{ $gbInfo := .Scratch.Get "gbInfo" }}
-    {{ with index $gbInfo "subtitle" }}
-      <h2 class="text-xl text-gray-600 mt-1">{{ . }}</h2>
+    <h1 class="text-3xl font-bold mb-1">{{ .Title }}</h1>
+    {{ with .Params.subtitle }}
+      <h2 class="text-xl text-gray-600">{{ . }}</h2>
     {{ end }}
   </header>
 
-  {{/* ======= 2) COVER & METADATEN ======= */}}
+  {{/* ======= 2) COVER & ALL METADATEN ======= */}}
   {{ partial "book-meta.html" . }}
 
-  {{/* ======= 3) RATING (Sterne) ======= */}}
+  {{/* ======= 3) RATING (STERNE) ======= */}}
   <div class="mt-6">
     <p>
       <strong>{{ i18n "ratingLabel" }}:</strong>
       {{ $r := .Params.rating }}
-      {{ range $i := seq 5 }}
-        {{ if ge $r $i }}
-          <span class="text-yellow-500 text-lg leading-none">★</span>
+      {{ range seq 5 }}
+        {{ if ge $r . }}
+          <span class="text-yellow-500 text-xl leading-none">★</span>
         {{ else }}
-          <span class="text-gray-300 text-lg leading-none">★</span>
+          <span class="text-gray-300 text-xl leading-none">★</span>
         {{ end }}
       {{ end }}
     </p>
@@ -30,23 +29,26 @@
 
   {{/* ======= 4) KOMMENTAR ======= */}}
   {{ if .Params.comment }}
-    <section class="comment mt-6">
+    <section class="mt-6">
       <h3 class="text-xl font-semibold mb-2">{{ i18n "commentTitle" }}</h3>
       {{ .Params.comment | markdownify }}
     </section>
   {{ end }}
 
   {{/* ======= 5) TAGS ======= */}}
-  <footer class="mt-6">
-    <p>
-      <strong>{{ i18n "tagsLabel" }}:</strong>
-      {{ range $i, $tag := .Params.tags }}
-        <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" class="text-blue-600 hover:underline">
-          {{ $tag }}
-        </a>{{ if lt (add $i 1) (len .Params.tags) }}, {{ end }}
-      {{ end }}
-    </p>
-  </footer>
+  {{ $tags := .Params.tags }}
+  {{ if $tags }}
+    <footer class="mt-6">
+      <p>
+        <strong>{{ i18n "tagsLabel" }}:</strong>
+        {{ range $i, $tag := $tags }}
+          <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" class="text-blue-600 hover:underline">
+            {{ $tag }}
+          </a>{{ if lt (add $i 1 (len $tags)) }}, {{ end }}
+        {{ end }}
+      </p>
+    </footer>
+  {{ end }}
 
 </article>
 {{ end }}
