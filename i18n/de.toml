@@ -21,3 +21,15 @@ other = "Kaufen"
 
 [ratingLabel]
 other = "Bewertung"
+
+[publisherLabel]
+other = "Verlag"
+
+[publishedDateLabel]
+other = "Erscheinungsjahr"
+
+[tagTermTitle]
+other = "Bücher mit Tag"
+
+[authorTermTitle]
+other = "Bücher von Autor"
