@@ -33,3 +33,6 @@ other = "Books tagged"
 
 [authorTermTitle]
 other = "Books by author"
+
+[tagsLabel]
+other = "Tags"
