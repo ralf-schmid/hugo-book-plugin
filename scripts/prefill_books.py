@@ -3,58 +3,51 @@ import os
 import argparse
 import frontmatter
 import requests
+from PIL import Image
+from pyzbar.pyzbar import decode
 
-# API-Endpunkte
-OPENLIBRARY_URL = "https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data"
-GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"  # Fallback
+API_URL = "https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data"
+GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
 
 class ISBNNotFoundError(Exception):
     pass
 
 def fetch_openlibrary(isbn):
-    url = OPENLIBRARY_URL.format(isbn=isbn)
+    url = API_URL.format(isbn=isbn)
     resp = requests.get(url)
     resp.raise_for_status()
-    ol = resp.json()
+    data = resp.json()
     key = f"ISBN:{isbn}"
-    data = ol.get(key)
-    if not data:
-        return None
-    desc = data.get("description")
-    if isinstance(desc, dict):
-        desc = desc.get("value", "")
-    return {
-        "override_author": data.get("authors", [{}])[0].get("name", ""),
-        "override_pages": data.get("number_of_pages", 0),
-        "override_description": desc or ""
-    }
+    return data.get(key)
 
 def fetch_google_books(isbn):
     url = GOOGLE_BOOKS_URL.format(isbn=isbn)
     resp = requests.get(url)
     resp.raise_for_status()
-    items = resp.json().get("items")
+    items = resp.json().get("items", [])
     if not items:
         return None
-    info = items[0].get("volumeInfo", {})
-    return {
-        "override_author": ", ".join(info.get("authors", [])),
-        "override_pages": info.get("pageCount", 0),
-        "override_description": info.get("description", "")
-    }
+    return items[0].get("volumeInfo", {})
 
 def fetch_metadata(isbn):
-    """Versucht erst OpenLibrary, dann Google Books. Bei keinem Treffer ISBNNotFoundError."""
-    # Normalisiere ISBN: entferne Bindestriche
     isbn_clean = isbn.replace('-', '').strip()
-    # Versuch 1: OpenLibrary
-    meta = fetch_openlibrary(isbn_clean)
-    if meta:
-        return meta
-    # Versuch 2: Google Books
-    meta = fetch_google_books(isbn_clean)
-    if meta:
-        return meta
+    ol = fetch_openlibrary(isbn_clean)
+    if ol:
+        desc = ol.get("description")
+        if isinstance(desc, dict):
+            desc = desc.get("value", "")
+        return {
+            "override_author": ol.get("authors", [{}])[0].get("name", ""),
+            "override_pages": ol.get("number_of_pages", 0),
+            "override_description": desc or "",
+        }
+    gb = fetch_google_books(isbn_clean)
+    if gb:
+        return {
+            "override_author": ", ".join(gb.get("authors", [])),
+            "override_pages": gb.get("pageCount", 0),
+            "override_description": gb.get("description", "")
+        }
     raise ISBNNotFoundError(f"Keine Daten gefunden für ISBN {isbn}")
 
 def process_markdown(content_dir):
@@ -69,42 +62,41 @@ def process_markdown(content_dir):
                 continue
             try:
                 meta = fetch_metadata(isbn)
-            except Exception as e:
+            except ISBNNotFoundError as e:
                 print(f"[ERROR] {file}: {e}")
                 continue
+
             updated = False
-            for k, v in meta.items():
-                if v and not post.get(k):
-                    post[k] = v
+            for key, value in meta.items():
+                if value and not post.get(key):
+                    post[key] = value
                     updated = True
+            if post.get("override_author") and not post.get("authors"):
+                post["authors"] = [post["override_author"]]
+                updated = True
+
             if updated:
                 with open(path, "wb") as f:
                     frontmatter.dump(post, f)
                 print(f"[MD] aktualisiert: {file}")
 
-# Barcode-Funktion bleibt unverändert, optional importiert
-
 def decode_isbns_from_images(image_dir):
     try:
         from PIL import Image
         from pyzbar.pyzbar import decode
-    except ImportError:
-        print("[WARN] Barcode-Unterstützung fehlt (pyzbar/Pillow)")
+    except ImportError as e:
+        print(f"[WARN] Barcode-Unterstützung nicht verfügbar: {e}")
         return []
     found = set()
     for fname in os.listdir(image_dir):
         if not fname.lower().endswith((".jpg", ".jpeg")):
             continue
-        try:
-            img = Image.open(os.path.join(image_dir, fname))
-        except Exception:
-            continue
+        img = Image.open(os.path.join(image_dir, fname))
         for code in decode(img):
             data = code.data.decode("utf-8")
             if data.isdigit() and len(data) in (10, 13):
                 found.add(data)
     return sorted(found)
-
 
 def create_markdown_for_isbns(isbns, output_dir):
     for isbn in isbns:
@@ -114,9 +106,10 @@ def create_markdown_for_isbns(isbns, output_dir):
             continue
         try:
             meta = fetch_metadata(isbn)
-        except Exception as e:
+        except ISBNNotFoundError as e:
             print(f"[ERROR] {filename}: {e}")
             continue
+
         post = frontmatter.Post(
             title="",
             date="",
@@ -129,18 +122,30 @@ def create_markdown_for_isbns(isbns, output_dir):
             comment="",
             draft=True
         )
+        if post.get("override_author"):
+            post["authors"] = [post["override_author"]]
+
         with open(filename, "wb") as f:
             frontmatter.dump(post, f)
         print(f"[NEW] erstellt: {filename}")
 
-
 def main():
     parser = argparse.ArgumentParser(
-        description="Buchtitel/Metadaten per ISBN auffüllen – optional via Bild-Ordner")
-    parser.add_argument("-c", "--content-dir", default="content/books", help="Verzeichnis mit .md-Dateien")
-    parser.add_argument("-i", "--images-dir", help="Optional: Verzeichnis mit Buch-Fotos (JPGs)")
-    parser.add_argument("--new-from-images", action="store_true",
-                        help="Neue .md für gefundene ISBNs anlegen")
+        description="Buchtitel/Metadaten per ISBN auffüllen – optional via Bild-Ordner"
+    )
+    parser.add_argument(
+        "-c", "--content-dir",
+        default="content/books",
+        help="Verzeichnis mit vorhandenen .md-Dateien"
+    )
+    parser.add_argument(
+        "-i", "--images-dir",
+        help="Optional: Verzeichnis mit Buch-Fotos (JPGs), um ISBN per Barcode zu lesen"
+    )
+    parser.add_argument(
+        "--new-from-images", action="store_true",
+        help="Neue .md für jede gefundene ISBN anlegen"
+    )
     args = parser.parse_args()
 
     process_markdown(args.content_dir)
