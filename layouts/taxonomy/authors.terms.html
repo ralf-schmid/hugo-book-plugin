@@ -1,0 +1,32 @@
+{{ define "main" }}
+<section class="section pt-7">
+  <div class="container">
+    <div class="row justify-center">
+      <article class="lg:col-10">
+
+        <header class="mb-6">
+          <h1 class="text-3xl font-bold">{{ i18n "authorTermTitle" }}</h1>
+        </header>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {{ $ctx := . }}
+          {{/* 1) Alle Autorennamen sammeln und sortieren */}}
+          {{ $names := slice }}
+          {{ range $name, $_ := .Site.Taxonomies.authors }}
+            {{ $names = $names | append $name }}
+          {{ end }}
+          {{ $sorted := sort $names }}
+
+          {{/* 2) Karte für jeden Namen rendern, jetzt mit Site im Dict */}}
+          {{ range $sorted }}
+            <div class="mb-6">
+              {{ partial "components/author-card.html" (dict "Name" . "Site" $ctx.Site) }}
+            </div>
+          {{ end }}
+        </div>
+
+      </article>
+    </div>
+  </div>
+</section>
+{{ end }}
