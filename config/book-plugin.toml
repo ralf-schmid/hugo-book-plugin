@@ -9,3 +9,5 @@ url = "https://www.amazon.de/s?k={{.ISBN}}"
 [[params.book.buyLinks]]
 name = "Thalia"
 url = "https://www.thalia.de/search.html?filter.searchWord={{.ISBN}}"
+
+paginate = 12  # Anzahl Bücher pro Seite
