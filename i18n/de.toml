@@ -31,6 +31,9 @@ other = "Erscheinungsjahr"
 [tagTermTitle]
 other = "Bücher mit Tag"
 
+[tagTermTitleBlog]
+other = "Blogbeiträge mit Tag"
+
 [authorTermTitle]
 other = "Bücher von Autor"
 
