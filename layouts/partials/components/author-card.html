@@ -1,0 +1,27 @@
+{{/* layouts/partials/components/author-card.html */}}
+{{/* Übersicht der Autoren */}}
+{{ $name := .Name }}
+{{ $slug := urlize $name }}
+<div class="bg-theme-light dark:bg-darkmode-theme-light rounded p-8 text-center">
+  <h4 class="mb-3">
+    <a href="{{ "/authors/" | relLangURL }}{{ $slug }}" class="text-lg font-semibold">
+      {{ $name | title }}
+    </a>
+  </h4>
+
+  {{/* Optional: Autorenbild, wenn in Site.Params.authorsImages konfiguriert */}}
+  {{ with index .Site.Params.authorsImages $name }}
+    <img src="{{ . }}" alt="Avatar von {{ $name }}" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover">
+  {{ end }}
+
+  {{/* Kurz-Bio aus Wikipedia (REST Summary API) laden */}}
+  {{ $wikiURL := printf "https://de.wikipedia.org/api/rest_v1/page/summary/%s" (urlize $name) }}
+  {{- $bioRes := resources.GetRemote $wikiURL -}}
+  {{- $bioJSON := $bioRes | transform.Unmarshal -}}
+  {{- $extract := index $bioJSON "extract" -}}
+  {{ if $extract }}
+    <p class="text-sm text-gray-700 dark:text-gray-300">{{ $extract }}</p>
+  {{ else }}
+    <p class="text-sm text-gray-700 dark:text-gray-300">–</p>
+  {{ end }}
+</div>
