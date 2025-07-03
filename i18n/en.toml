@@ -39,3 +39,6 @@ other = "Books by author"
 
 [tagsLabel]
 other = "Tags"
+
+[searchLabel]
+other = "Search"
