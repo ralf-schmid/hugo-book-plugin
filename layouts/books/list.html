@@ -1,6 +1,7 @@
 {{ define "main" }}
   <h1 class="text-3xl font-bold mb-6">{{ i18n "bookListTitle" }}</h1>
 
+<p><strong>{{ i18n "tagsLabel" }}:</strong>
   {{ $allTags := slice }}
   {{ range .Pages }}
     {{ range .Params.tags }}
@@ -16,6 +17,9 @@
       </a>
     {{ end }}
   </nav>
+  
+<p><strong>{{ i18n "authorLabel" }}:</strong> <a href="/authors/">{{ i18n "authorTermTitle" }}</a></p>
+<p>&nbsp;</p>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
     {{ $size := .Site.Params.book.imageSizeList }}
@@ -42,7 +46,19 @@
             <p class="text-sm text-gray-600">
               {{ with .Params.override_author }}{{ . }}{{ else }}{{ index .Params.authors 0 }}{{ end }}
             </p>
+            
+            <p><strong>{{ i18n "ratingLabel" }}:</strong>
+      		{{ $r := .Params.rating }}
+      		{{ range $i := seq 5 }}
+        		{{ if ge $r $i }}
+          			<span class="text-yellow-500 text-xl">★</span>
+        		{{ else }}
+          			<span class="text-gray-300 text-xl">★</span>
+        		{{ end }}
+      		{{ end }}
+    	  </p>
           </div>
+          
         </a>
       </article>
     {{ end }}
