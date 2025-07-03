@@ -91,6 +91,9 @@ python scripts/prefill_books.py --images-dir Pfad/zu/Buchfotos --new-from-images
 
 Das Skript liest Barcodes (ISBN) aus JPG-Bildern und erstellt bzw. aktualisiert deine `.md`-Dateien automatisch.
 
+## Script im Einsatz
+Ich habe das Plugin für Hugo in erster Linie für mich geschrieben. Hier ist das Plugin sichtbar: [https://www.ralf-schmid.de/books](https://www.ralf-schmid.de/books)
+
 ## Lizenz
 
 MIT
