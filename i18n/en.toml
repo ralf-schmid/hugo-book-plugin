@@ -31,6 +31,9 @@ other = "Published"
 [tagTermTitle]
 other = "Books tagged"
 
+[tagTermTitleBlog]
+other = "Blogs tagged"
+
 [authorTermTitle]
 other = "Books by author"
 
