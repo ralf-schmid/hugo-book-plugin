@@ -7,113 +7,96 @@
       <article class="lg:col-10">
         <h1 class="text-3xl font-bold mb-6">{{ i18n "bookListTitle" }}</h1>
 
-        {{/* Tag-Filter */}}
-        <p><strong>{{ i18n "tagsLabel" }}:</strong>
-          {{ $allTags := slice }}
-          {{ range .Pages }}
-            {{ range .Params.tags }}
-              {{ $allTags = $allTags | append . }}
-            {{ end }}
+        <p><strong>{{ i18n "tagsLabel" }}:</strong></p>
+        {{ $allTags := slice }}
+        {{ range .Pages }}
+          {{ range .Params.tags }}
+            {{ $allTags = $allTags | append . }}
           {{ end }}
-          {{ $uniqueTags := uniq $allTags | sort }}
-          <nav class="filters mb-8">
-            {{ range $uniqueTags }}
-              <a href="{{ "/tags/" | relLangURL }}{{ . | urlize }}"
-                class="inline-block px-3 py-1 mr-2 mb-2 bg-gray-200 rounded-full text-sm hover:bg-gray-300">
-                {{ . }}
-              </a>
-            {{ end }}
-          </nav>
-        </p>
+        {{ end }}
+        {{ $uniqueTags := uniq $allTags | sort }}
+        <nav class="filters mb-8">
+          {{ range $uniqueTags }}
+            <a href="{{ "/tags/" | relLangURL }}{{ . | urlize }}"
+               class="inline-block px-3 py-1 mr-2 mb-2 bg-gray-200 rounded-full text-sm hover:bg-gray-300">
+              {{ . }}
+            </a>
+          {{ end }}
+        </nav>
 
-        {{/* Autoren-Filter */}}
-        <p><strong>{{ i18n "authorLabel" }}:</strong>
-          {{ $allAuthors := slice }}
-          {{ range .Pages }}
-            {{ $ap := .Params.authors }}
-            {{ if $ap }}
-              {{ if eq (printf "%T" $ap) "string" }}
-                {{ $allAuthors = $allAuthors | append $ap }}
-              {{ else }}
-                {{ range $ap }}
-                  {{ $allAuthors = $allAuthors | append . }}
-                {{ end }}
+        <p><strong>{{ i18n "authorLabel" }}:</strong></p>
+        {{ $allAuthors := slice }}
+        {{ range .Pages }}
+          {{ $ap := .Params.authors }}
+          {{ if $ap }}
+            {{ if eq (printf "%T" $ap) "string" }}
+              {{ $allAuthors = $allAuthors | append $ap }}
+            {{ else }}
+              {{ range $ap }}
+                {{ $allAuthors = $allAuthors | append . }}
               {{ end }}
             {{ end }}
           {{ end }}
-          {{ $uniqueAuthors := uniq $allAuthors | sort }}
-          <nav class="filters mb-8">
-            {{ range $uniqueAuthors }}
-              <a href="{{ "/authors/" | relLangURL }}{{ . | urlize }}"
-                class="inline-block px-3 py-1 mr-2 mb-2 bg-gray-200 rounded-full text-sm hover:bg-gray-300">
-                {{ . }}
-              </a>
-            {{ end }}
-          </nav>
-        </p>
+        {{ end }}
+        {{ $uniqueAuthors := uniq $allAuthors | sort }}
+        <nav class="filters mb-8">
+          {{ range $uniqueAuthors }}
+            <a href="{{ "/authors/" | relLangURL }}{{ . | urlize }}"
+               class="inline-block px-3 py-1 mr-2 mb-2 bg-gray-200 rounded-full text-sm hover:bg-gray-300">
+              {{ . }}
+            </a>
+          {{ end }}
+        </nav>
 
-        {{/* Suchfeld + Bewertungsfilter */}}
-        <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <input type="text" id="searchInput" placeholder="Suche nach Titel oder Autor"
-            class="border border-gray-300 rounded px-4 py-2 w-full md:w-1/2" />
+		<p><strong>{{ i18n "searchLabel" }}:</strong></p>
+        <input type="text" id="searchInput" placeholder="{{ i18n "searchPlaceholder" }}"
+               class="w-full mb-6 px-4 py-2 border rounded" onkeyup="filterBooks()" />
 
-          <select id="ratingFilter" class="border border-gray-300 rounded px-4 py-2">
-            <option value="">{{ i18n "allRatings" | default "Alle Bewertungen" }}</option>
-            {{ range seq 5 }}
-              <option value="{{ . }}">{{ . }} ★</option>
-            {{ end }}
-          </select>
-        </div>
+		<p><strong>{{ i18n "ratingLabel" }}:</strong></p>
+        <select id="ratingFilter" class="mb-6 px-4 py-2 border rounded" onchange="filterBooks()">
+          <option value="">{{ i18n "filterByRating" }}</option>
+          {{ range seq 5 }}
+            <option value="{{ . }}">{{ . }}+ ★</option>
+          {{ end }}
+        </select>
 
-        {{/* Book Grid mit Pagination */}}
-        {{ $paginator := .Paginate (.Pages.ByDate.Reverse) }}
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div id="booksGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {{ $size := .Site.Params.book.imageSizeList }}
           {{ $dash := cond (gt (len $size) 0) (printf "-%s" $size) "" }}
-          {{ range $paginator.Pages }}
-            {{/* Autoren als String bauen für Filter */}}
-            {{ $authors := slice }}
-            {{ with .Params.override_author }}
-              {{ if eq (printf "%T" .) "string" }}
-                {{ $authors = slice . }}
-              {{ else }}
-                {{ $authors = . }}
-              {{ end }}
-            {{ else if .Params.authors }}
-              {{ $authors = .Params.authors }}
-            {{ end }}
-            {{ $authorString := delimit (apply $authors "lower" ".") " " }}
-
-            <article class="book-card border rounded-lg overflow-hidden shadow hover:shadow-lg transition-shadow duration-200"
-              data-title="{{ .Title | lower }}"
-              data-author="{{ $authorString }}"
-              data-rating="{{ .Params.rating }}">
+          {{ $pag := .Paginate (.Pages.ByDate.Reverse) }}
+          {{ range $pag.Pages }}
+            <article class="book-card border rounded-lg overflow-hidden shadow hover:shadow-lg transition-shadow duration-200">
               <a href="{{ .Permalink }}">
                 {{ with .Params.override_cover }}
-                  <img src="{{ . }}" alt="{{ $.Title }} Cover"
-                    class="w-full h-48 object-cover">
+                  <img src="{{ . }}" alt="{{ $.Title }} Cover" class="w-full h-48 object-cover">
                 {{ else }}
-                  <img
-                    src="https://covers.openlibrary.org/b/isbn/{{ .Params.isbn }}{{ $dash }}.jpg?default=false"
-                    alt="{{ .Title }} Cover"
-                    class="w-full h-48 object-cover"
-                    onerror="this.style.display='none'">
+                  <img src="https://covers.openlibrary.org/b/isbn/{{ .Params.isbn }}{{ $dash }}.jpg?default=false"
+                       alt="{{ .Title }} Cover" class="w-full h-48 object-cover"
+                       onerror="this.style.display='none'">
                 {{ end }}
-
                 <div class="p-4">
                   <h2 class="text-lg font-semibold mb-1">{{ .Title }}</h2>
                   <p class="text-sm text-gray-600">
-                    {{ with .Params.override_author }}{{ delimit . ", " }}
-                    {{ else if .Params.authors }}{{ delimit .Params.authors ", " }}
+                    {{ if .Params.override_author }}
+                      {{ if eq (printf "%T" .Params.override_author) "string" }}
+                        {{ .Params.override_author }}
+                      {{ else }}
+                        {{ delimit .Params.override_author ", " }}
+                      {{ end }}
+                    {{ else if .Params.authors }}
+                      {{ if eq (printf "%T" .Params.authors) "string" }}
+                        {{ .Params.authors }}
+                      {{ else }}
+                        {{ delimit .Params.authors ", " }}
+                      {{ end }}
+                    {{ else }}–
                     {{ end }}
                   </p>
                   <p><strong>{{ i18n "ratingLabel" }}:</strong>
                     {{ $r := .Params.rating }}
-                    {{ range $i := seq 5 }}
-                      {{ if ge $r $i }}
-                        <span class="text-yellow-500 text-xl">★</span>
-                      {{ else }}
-                        <span class="text-gray-300 text-xl">★</span>
+                    {{ range seq 5 }}
+                      {{ if ge $r . }}<span class="text-yellow-500 text-xl">★</span>
+                      {{ else }}<span class="text-gray-300 text-xl">★</span>
                       {{ end }}
                     {{ end }}
                   </p>
@@ -123,34 +106,27 @@
           {{ end }}
         </div>
 
-        {{/* Pagination Navigation */}}
-        <div class="mt-10 flex justify-center">
+        <div class="mt-8">
           {{ template "_internal/pagination.html" . }}
         </div>
+
+        <script>
+          function filterBooks() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const rating = parseInt(document.getElementById('ratingFilter').value);
+            const books = document.querySelectorAll('#booksGrid article');
+            books.forEach(book => {
+              const text = book.textContent.toLowerCase();
+              const stars = book.querySelectorAll('.text-yellow-500').length;
+              const matchText = text.includes(input);
+              const matchRating = !rating || stars >= rating;
+              book.style.display = matchText && matchRating ? '' : 'none';
+            });
+          }
+        </script>
+
       </article>
     </div>
   </div>
 </section>
-
-<script>
-  const input = document.getElementById("searchInput");
-  const ratingFilter = document.getElementById("ratingFilter");
-
-  function filterBooks() {
-    const query = input.value.toLowerCase();
-    const selectedRating = ratingFilter.value;
-    document.querySelectorAll(".book-card").forEach(card => {
-      const title = card.dataset.title;
-      const author = card.dataset.author;
-      const rating = card.dataset.rating;
-      const matchesSearch = title.includes(query) || author.includes(query);
-      const matchesRating = !selectedRating || rating === selectedRating;
-      card.style.display = (matchesSearch && matchesRating) ? "" : "none";
-    });
-  }
-
-  input.addEventListener("input", filterBooks);
-  ratingFilter.addEventListener("change", filterBooks);
-</script>
-
 {{ end }}
