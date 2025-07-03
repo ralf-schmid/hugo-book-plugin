@@ -18,7 +18,38 @@
     {{ end }}
   </nav>
   
-<p><strong>{{ i18n "authorLabel" }}:</strong> <a href="/authors/">{{ i18n "authorTermTitle" }}</a></p>
+<p><strong>{{ i18n "authorLabel" }}:</strong>
+  {{/* 1) Alle Autoren sammeln */}}
+  {{ $allAuthors := slice }}
+  {{ range .Pages }}
+    {{ $ap := .Params.authors }}
+    {{ if $ap }}
+      {{ if eq (printf "%T" $ap) "string" }}
+        {{/* Einzel-Author */}}
+        {{ $allAuthors = $allAuthors | append $ap }}
+      {{ else }}
+        {{/* Liste von Autoren */}}
+        {{ range $ap }}
+          {{ $allAuthors = $allAuthors | append . }}
+        {{ end }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+
+  {{/* 2) Einzigartige Autoren sortieren */}}
+  {{ $uniqueAuthors := uniq $allAuthors | sort }}
+
+  {{/* 3) Als Links rendern */}}
+  <nav class="filters mb-8">
+    {{ range $uniqueAuthors }}
+      <a href="{{ "/authors/" | relLangURL }}{{ . | urlize }}"
+         class="inline-block px-3 py-1 mr-2 mb-2 bg-gray-200 rounded-full text-sm hover:bg-gray-300">
+        {{ . }}
+      </a>
+    {{ end }}
+  </nav>
+</p>
+
 <p>&nbsp;</p>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
