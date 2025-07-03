@@ -1,5 +1,0 @@
-[module]
-  # Makes “layouts/” in your module appear under the site’s layouts/
-  [[module.mounts]]
-    source = "layouts"
-    target = "layouts"
