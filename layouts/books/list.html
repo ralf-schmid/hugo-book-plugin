@@ -2,6 +2,11 @@
 {{ partial "page-header" . }}
 <h1 class="text-3xl font-bold mb-6">{{ i18n "bookListTitle" }}</h1>
 
+<section class="section pt-7">
+  <div class="container">
+    <div class="row justify-center">
+      <article class="lg:col-10">
+
 <p><strong>{{ i18n "tagsLabel" }}:</strong>
   {{ $allTags := slice }}
   {{ range .Pages }}
@@ -95,4 +100,8 @@
       </article>
     {{ end }}
   </div>
+     </article>
+    </div>
+  </div>
+</section>
 {{ end }}
