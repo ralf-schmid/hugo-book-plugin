@@ -1,49 +1,109 @@
 {{/* layouts/books/single.html */}}
 {{ define "main" }}
-<article class="book-detail max-w-3xl mx-auto p-6 prose">
+<section class="section pt-7">
+    <div class="container">
+      <div class="row justify-center">
+        <article class="lg:col-10">
 
-  {{/* TITLE & SUBTITLE */}}
+  {{/* 1) Google Books data */}}
+  {{ $isbn  := .Params.isbn }}
+  {{ $gbURL := printf "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" $isbn }}
+  {{ $gb    := resources.GetRemote $gbURL | transform.Unmarshal }}
+  {{ $items := index $gb "items" }}
+  {{ $info  := dict }}
+  {{ if and $items (gt (len $items) 0) }}{{ $info = index (index $items 0) "volumeInfo" }}{{ end }}
+
+  {{/* 2) Title & Subtitle */}}
   <header class="mb-6">
     <h1 class="text-3xl font-bold mb-1">{{ .Title }}</h1>
-    {{ with .Params.subtitle }}
-      <h2 class="text-xl text-gray-600">{{ . }}</h2>
-    {{ end }}
+    {{ if .Params.subtitle }}<h2 class="text-xl text-gray-600">{{ .Params.subtitle }}</h2>{{ end }}
   </header>
 
-  {{/* COVER & METADATA */}}
-  {{ partial "book-meta.html" . }}
+  {{/* 3) Description with embedded cover */}}
+  <section class="mb-6">
+    <h3 class="text-xl font-semibold mb-2">{{ i18n "descriptionLabel" }}</h3>
+    {{/* Determine cover URL */}}
+    {{ $coverURL := .Params.override_cover }}
+    {{ if not $coverURL }}
+      {{ $links := index $info "imageLinks" }}
+      {{ if and $links (isset $links "thumbnail") }}{{ $coverURL = index $links "thumbnail" }}
+      {{ else if and $links (isset $links "smallThumbnail") }}{{ $coverURL = index $links "smallThumbnail" }}
+      {{ else }}{{ $coverURL = printf "https://covers.openlibrary.org/b/isbn/%s-L.jpg?default=false" $isbn }}{{ end }}
+    {{ end }}
+    <img src="{{ $coverURL }}" alt="{{ .Title }} Cover" class="float-left mr-6 mb-4 border rounded" style="width:400px; max-width:100%;">
+    {{ if .Params.override_description }}<p>{{ .Params.override_description }}</p>
+    {{ else if index $info "description" }}<p>{{ index $info "description" }}</p>
+    {{ else }}<p>–</p>{{ end }}
+    <div class="clear-both"></div>
+  </section>
 
-  {{/* RATING (STARS) */}}
-  <div class="mt-6">
-    <p><strong>{{ i18n "ratingLabel" }}:</strong>
-      {{ $r := .Params.rating }}
-      {{ range $i := seq 5 }}
-        {{ if ge $r $i }}
-          <span class="text-yellow-500 text-xl">★</span>
-        {{ else }}
-          <span class="text-gray-300 text-xl">★</span>
+  {{/* 4) Autor, Verlag, Preis, Rating, Kommentar, Tags in sequence */}}
+
+  {{/* 4) Autor */}}
+  <section class="mb-4">
+    <p><strong>{{ i18n "authorLabel" }}:</strong>
+      {{ $authors := slice }}
+      {{ if .Params.override_author }}
+        {{ $param := .Params.override_author }}
+        {{ if eq (printf "%T" $param) "string" }}{{ $authors = slice $param }}{{ else }}{{ $authors = $param }}{{ end }}
+      {{ else if index $info "authors" }}
+        {{ $authors = index $info "authors" }}
+      {{ end }}
+      {{ if gt (len $authors) 0 }}
+        {{ range $i, $a := $authors }}
+          <a href="{{ "/authors/" | relLangURL }}{{ $a | urlize }}" class="text-blue-600 hover:underline">{{ $a }}</a>{{ if lt (add $i 1) (len $authors) }}, {{ end }}
         {{ end }}
+      {{ else }}–{{ end }}
+    </p>
+  </section>
+
+
+  {{/* Verlag */}}
+  <section class="mb-4">
+    <p><strong>{{ i18n "publisherLabel" }}:</strong> {{ if index $info "publisher" }}{{ index $info "publisher" }}{{ else }}–{{ end }}</p>
+  </section>
+
+  {{/* 6) Preis mit Dezimalkomma */}}
+  <section class="mb-4">
+    <p><strong>{{ i18n "priceLabel" }}:</strong>
+      {{ if .Params.override_price }}
+        {{ printf "%s Euro" (replace (printf "%0.2f" .Params.override_price) "." ",") }}
+      {{ else }}
+        –
       {{ end }}
     </p>
-  </div>
+  </section>
 
-  {{/* COMMENT */}}
+  {{/* Rating */}}
+  <section class="mb-4">
+    <p><strong>{{ i18n "ratingLabel" }}:</strong>
+      {{ $r := .Params.rating }}
+      {{ range seq 5 }}{{ if ge $r . }}<span class="text-yellow-500">★</span>{{ else }}<span class="text-gray-300">★</span>{{ end }}{{ end }}
+    </p>
+  </section>
+
+  {{/* Kommentar */}}
   {{ if .Params.comment }}
-    <section class="mt-6">
+    <section class="mb-6">
       <h3 class="text-xl font-semibold mb-2">{{ i18n "commentTitle" }}</h3>
       {{ .Params.comment | markdownify }}
     </section>
   {{ end }}
 
-  {{/* TAGS */}}
-  <footer class="mt-6">
+  {{/* Tags */}}
+  <footer>
     <p><strong>{{ i18n "tagsLabel" }}:</strong>
       {{ $tags := cond (eq (printf "%T" .Params.tags) "string") (slice .Params.tags) .Params.tags }}
-      {{ range $i, $tag := $tags }}
-        <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" class="text-blue-600 hover:underline">{{ $tag }}</a>{{ if lt (add $i 1) (len $tags) }}, {{ end }}
-      {{ end }}
+      {{ if gt (len $tags) 0 }}
+        {{ range $i, $tag := $tags }}
+          <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" class="text-blue-600 hover:underline">{{ $tag }}</a>{{ if lt (add $i 1) (len $tags) }}, {{ end }}
+        {{ end }}
+      {{ else }}–{{ end }}
     </p>
   </footer>
 
 </article>
+</div>
+</div>
+</section>
 {{ end }}
