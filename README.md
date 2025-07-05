@@ -91,6 +91,9 @@ python scripts/prefill_books.py --images-dir Pfad/zu/Buchfotos --new-from-images
 
 Das Skript liest Barcodes (ISBN) aus JPG-Bildern und erstellt bzw. aktualisiert deine `.md`-Dateien automatisch.
 
+## Massenimport
+Ich habe festgestellt, dass ich ganz viele schöne Bücher im Schrank stehen habe. Das schreit nach weiterer Optimierung. Ich habe dafür die App [BookBudy](https://apps.apple.com/de/app/bookbuddy-pro-meine-b%C3%BCcher/id395149950) genutzt. Einfach ISBN oder Barcode scannen oder zur Not manuell eingeben oder nach dem Buch suchen - und schon kann man in kürzester Zeit ein ganzes Regal scannen. Über den CSV-Export kann man die perfekte Eingabedatei für das Script import_csv_books.py (Eingabedatei wird über den Parameter --csv übergeben) schaffen. Die dafür benötigten Python-Module befinden sich in der Datei requirements.txt ebenfalls im scripts-Verzeichnis. Anschließend lassen sich die Angaben mit scripts/prefill_books.py anreichern.
+
 ## Script im Einsatz
 Ich habe das Plugin für Hugo in erster Linie für mich geschrieben. Hier ist das Plugin sichtbar: [https://www.ralf-schmid.de/books](https://www.ralf-schmid.de/books)
 
